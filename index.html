@@ -4,99 +4,283 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Beam Analysis Plot</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; background: #f0f2f5; color: #333; }
+
+        header {
+            background: #1a3a5c;
+            color: white;
+            padding: 14px 24px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 20px auto;
+            padding: 0 16px;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: flex-start;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            padding: 18px;
+        }
+
+        .input-panel { flex: 0 0 270px; }
+        .charts-panel { flex: 1; min-width: 320px; }
+
+        .panel-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #1a3a5c;
+            border-bottom: 2px solid #1a3a5c;
+            padding-bottom: 8px;
+            margin-bottom: 14px;
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+        td { padding: 5px 3px; font-size: 0.875rem; vertical-align: middle; }
+        td.label { font-weight: 600; color: #444; padding-right: 6px; white-space: nowrap; }
+        td.unit { color: #888; font-size: 0.78rem; padding-left: 4px; white-space: nowrap; }
+
+        input[type="text"], select {
+            width: 100%;
+            padding: 5px 7px;
+            border: 1px solid #d0d5dd;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            background: #fafafa;
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus, select:focus {
+            outline: none;
+            border-color: #1a3a5c;
+            background: white;
+        }
+
+        .divider { border: none; border-top: 1px solid #eee; margin: 8px 0; }
+
+        .btn-calc {
+            width: 100%;
+            padding: 9px;
+            background: #1a3a5c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: background 0.2s;
+            letter-spacing: 0.3px;
+        }
+        .btn-calc:hover { background: #2a5a8c; }
+
+        .summary-box {
+            background: #eef4fb;
+            border-left: 4px solid #1a3a5c;
+            padding: 9px 12px;
+            border-radius: 0 4px 4px 0;
+            font-size: 0.82rem;
+            margin-top: 14px;
+            line-height: 1.6;
+            display: none;
+        }
+        .summary-box.visible { display: block; }
+        .summary-box b { color: #1a3a5c; }
+
+        .chart-section { margin-bottom: 20px; }
+        .chart-title {
+            font-size: 0.82rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: #555;
+            margin-bottom: 6px;
+            padding-left: 4px;
+            border-left: 3px solid #ccc;
+            padding-left: 8px;
+        }
+        .chart-title.bmd { border-left-color: #2ecc71; }
+        .chart-title.sfd { border-left-color: #e74c3c; }
+        .chart-title.def { border-left-color: #3498db; }
+
+        canvas { width: 100% !important; max-height: 200px; }
+
+        .hint { font-size: 0.75rem; color: #999; margin-top: 4px; font-style: italic; }
+    </style>
 </head>
 <body>
-    <form>
+
+<header>Beam Analysis Tool</header>
+
+<div class="container">
+
+    <!-- INPUT PANEL -->
+    <div class="panel input-panel">
+        <div class="panel-title">Input Parameters</div>
         <table>
             <tr>
-                <td>Condition</td>
-                <td>
-                    <select name="condition" id="condition">
+                <td class="label">Condition</td>
+                <td colspan="2">
+                    <select id="condition">
                         <option value="simply-supported">Simply Supported</option>
                         <option value="two-span-unequal">Two Span Unequal</option>
                     </select>
                 </td>
             </tr>
+            <tr><td colspan="3"><hr class="divider"></td></tr>
             <tr>
-                <td>Load Force (w)</td>
-                <td><input type="text" id="w"> kN/m</td>
+                <td class="label">Load (w)</td>
+                <td><input type="text" id="w" value="20"></td>
+                <td class="unit">kN/m</td>
             </tr>
             <tr>
-                <td>Primary Span (L1)</td>
-                <td><input type="text" id="primarySpan" value="4"> m</td>
+                <td class="label">Span L1</td>
+                <td><input type="text" id="primarySpan" value="8"></td>
+                <td class="unit">m</td>
+            </tr>
+            <tr id="row-L2" style="display:none">
+                <td class="label">Span L2</td>
+                <td><input type="text" id="secondarySpan" value="5"></td>
+                <td class="unit">m</td>
+            </tr>
+            <tr><td colspan="3"><hr class="divider"></td></tr>
+            <tr>
+                <td class="label">EI</td>
+                <td><input type="text" id="EI" value="3150000000000"></td>
+                <td class="unit">N·mm²</td>
             </tr>
             <tr>
-                <td>Secondary Span (L2)</td>
-                <td><input type="text" id="secondarySpan" value=""> m</td>
-            </tr>
-            <tr>
-                <td colspan="2"><hr></td>
-            </tr>
-            <tr>
-                <td>j2</td>
+                <td class="label">j2</td>
                 <td><input type="text" id="j2" value="2"></td>
+                <td class="unit">—</td>
             </tr>
+            <tr><td colspan="3"><hr class="divider"></td></tr>
             <tr>
-                <td>Bending Stiffnes (EI)</td>
-                <td><input type="text" id="EI" value="3150000000000"> Nmm<sup>2</sup></td>
-            </tr>
-
-            <tr>
-                <td colspan="2"><hr></td>
-            </tr>
-
-            <tr>
-                <td colspan="2" style="text-align: center;">
-                    <button type="button" id="calculate">Calculate</button>
+                <td colspan="3">
+                    <button class="btn-calc" id="calculate">▶ Calculate</button>
                 </td>
             </tr>
         </table>
-    </form>
-    <canvas id="deflection_plot"></canvas>
-    <canvas id="shear_force_plot"></canvas>
-    <canvas id="bending_moment_plot"></canvas>
+        <p class="hint">EI in N·mm²; j2 = deflection amplification factor.<br>EI is converted to kN·m² internally (÷ 10⁹).</p>
 
-    <script src="js/beam-analysis.js"></script>
-    <script src="js/analysis-plotter.js"></script>
+        <div class="summary-box" id="summary"></div>
+    </div>
 
-    <script>
-        /**
-         * Get float value of specified field
-         */
-        function floatVal(id) {
-            return parseFloat(
-                document.getElementById(id).value
-            );
+    <!-- CHARTS PANEL -->
+    <div class="panel charts-panel">
+        <div class="panel-title">Analysis Results</div>
+
+        <div class="chart-section">
+            <div class="chart-title bmd">Bending Moment Diagram (kN·m) — sagging negative</div>
+            <canvas id="bending_moment_plot"></canvas>
+        </div>
+        <div class="chart-section">
+            <div class="chart-title sfd">Shear Force Diagram (kN)</div>
+            <canvas id="shear_force_plot"></canvas>
+        </div>
+        <div class="chart-section">
+            <div class="chart-title def">Deflection (mm) — downward negative</div>
+            <canvas id="deflection_plot"></canvas>
+        </div>
+    </div>
+
+</div>
+
+<script src="js/beam-analysis.js"></script>
+<script src="js/analysis-plotter.js"></script>
+<script>
+    function floatVal(id) { return parseFloat(document.getElementById(id).value); }
+    function stringVal(id) { return document.getElementById(id).value; }
+
+    // Show/hide L2 row
+    document.getElementById('condition').addEventListener('change', function () {
+        document.getElementById('row-L2').style.display =
+            this.value === 'two-span-unequal' ? '' : 'none';
+    });
+
+    const plotter = {
+        deflection    : new AnalysisPlotter('deflection_plot'),
+        shearForce    : new AnalysisPlotter('shear_force_plot'),
+        bendingMoment : new AnalysisPlotter('bending_moment_plot')
+    };
+
+    document.getElementById('calculate').addEventListener('click', function () {
+        const condition = stringVal('condition');
+        const w   = floatVal('w');
+        const L1  = floatVal('primarySpan');
+        const L2  = floatVal('secondarySpan');
+        const EI  = floatVal('EI');
+        const j2  = floatVal('j2') || 1;
+
+        if (!w || !L1 || !EI || w <= 0 || L1 <= 0 || EI <= 0) {
+            alert('Masukkan nilai positif yang valid untuk w, L1, dan EI.');
+            return;
+        }
+        if (condition === 'two-span-unequal' && (!L2 || L2 <= 0)) {
+            alert('Masukkan nilai L2 yang valid.');
+            return;
         }
 
-        function stringVal(id) {
-            return document.getElementById(id).value;
+        const beam = new Beam();
+        beam.primarySpan   = L1;
+        beam.secondarySpan = L2;
+        beam.material      = new Material('Beam', { EI, j2 });
+
+        const ba = new BeamAnalysis();
+        const deflectionData    = ba.getDeflection(beam, w, condition);
+        const bendingMomentData = ba.getBendingMoment(beam, w, condition);
+        const shearForceData    = ba.getShearForce(beam, w, condition);
+
+        plotter.bendingMoment.plot(bendingMomentData);
+        plotter.shearForce.plot(shearForceData);
+        plotter.deflection.plot(deflectionData);
+
+        // Summary
+        const EI_kNm2 = EI / 1e9;
+        const summary = document.getElementById('summary');
+        summary.classList.add('visible');
+
+        if (condition === 'simply-supported') {
+            const Mmax  = -(w * L1 * L1 / 8);          
+            const Vmax  =  w * L1 / 2;
+            const dmax  = -(5 * w * Math.pow(L1, 4) / (384 * EI_kNm2)) * j2 * 1000;
+            summary.innerHTML = `
+                <b>Simply Supported — L = ${L1} m, w = ${w} kN/m, j2 = ${j2}</b><br>
+                R<sub>A</sub> = R<sub>B</sub> = ${(w*L1/2).toFixed(3)} kN<br>
+                M<sub>max</sub> = ${Mmax.toFixed(3)} kN·m &nbsp;(mid-span)<br>
+                V<sub>max</sub> = ±${Vmax.toFixed(3)} kN<br>
+                δ<sub>max</sub> = ${dmax.toFixed(4)} mm
+            `;
+        } else {
+            const Mb = w * (Math.pow(L1,3) + Math.pow(L2,3)) / (8*(L1+L2));
+            const Ra = w*L1/2 - Mb/L1;
+            const Rc = w*L2/2 - Mb/L2;
+            const Rb = w*(L1+L2) - Ra - Rc;
+            summary.innerHTML = `
+                <b>Two-Span — L1 = ${L1} m, L2 = ${L2} m, w = ${w} kN/m, j2 = ${j2}</b><br>
+                R<sub>A</sub> = ${Ra.toFixed(3)} kN &nbsp;|&nbsp;
+                R<sub>B</sub> = ${Rb.toFixed(3)} kN &nbsp;|&nbsp;
+                R<sub>C</sub> = ${Rc.toFixed(3)} kN<br>
+                M<sub>B</sub> = +${Mb.toFixed(3)} kN·m (hogging at B)
+            `;
         }
-
-        document.getElementById('calculate').addEventListener('click', function(e) {
-            var beam = new Beam();
-
-            beam.primarySpan    = floatVal('primarySpan');
-            beam.secondarySpan  = floatVal('secondarySpan');
-            beam.material       = new Material('No Name', {
-                EI : floatVal('EI')
-            });
-
-            var plotter = {
-                deflection      : new AnalysisPlotter('deflection_plot'),
-                shearForce      : new AnalysisPlotter('shear_force_plot'),
-                bendingMoment   : new AnalysisPlotter('bending_moment_plot')
-            }
-
-            var beamAnalysis        = new BeamAnalysis();
-            var deflectionData      = beamAnalysis.getDeflection(beam, floatVal('w'), stringVal('condition'));
-            var bendingMomentData   = beamAnalysis.getBendingMoment(beam, floatVal('w'), stringVal('condition'));
-            var shearForceData      = beamAnalysis.getShearForce(beam, floatVal('w'), stringVal('condition'));
-
-            plotter.deflection.plot(deflectionData);
-            plotter.shearForce.plot(shearForceData);
-            plotter.bendingMoment.plot(bendingMomentData);
-        });
-    </script>
+    });
+</script>
 </body>
 </html>
