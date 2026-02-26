@@ -85,18 +85,10 @@ class ImportExportService
     }
 
     // =========================================================================
-    // IMPORT — Manual decisions (for conflict UI)
+    // IMPORT — Manual decisions 
     // =========================================================================
 
-    /**
-     * Import dengan keputusan manual per-layer dari UI.
-     *
-     * $decisions = [
-     *   ['layup_name' => 'CLT-5', 'layer_order' => 2, 'action' => 'keep'|'accept'],
-     *   ...
-     * ]
-     * Layer yang tidak ada di $decisions akan menggunakan default 'keep'.
-     */
+
     public function importWithDecisions(int $supplierId, array $data, array $decisions): array
     {
         $supplier   = Supplier::findOrFail($supplierId);
@@ -106,7 +98,6 @@ class ImportExportService
             return ['status' => 'error', 'message' => "Data import tidak valid."];
         }
 
-        // Index decisions agar mudah di-lookup: "layup_name|layer_order" => 'keep'|'accept'
         $decisionMap = [];
         foreach ($decisions as $d) {
             $decisionMap[$d['layup_name'] . '|' . $d['layer_order']] = $d['action'] ?? 'keep';
@@ -146,9 +137,8 @@ class ImportExportService
                         continue;
                     }
 
-                    // Cek apakah layer ini punya konflik
                     if (!$this->isLayerConflict($existingLayer, $layerData)) {
-                        continue; // Tidak konflik, skip
+                        continue; 
                     }
 
                     $decisionKey = $layupName . '|' . $layerData['layer_order'];
@@ -192,10 +182,7 @@ class ImportExportService
     // PUBLIC — Untuk dipakai Controller (preview page)
     // =========================================================================
 
-    /**
-     * Return detail konflik dengan data existing dan incoming side-by-side.
-     * Dipakai oleh import-preview view.
-     */
+
     public function getConflictDetails(int $supplierId, array $data): array
     {
         $supplier   = Supplier::findOrFail($supplierId);
@@ -203,9 +190,7 @@ class ImportExportService
         return $this->detectConflictsDetailed($supplier, $layupsData);
     }
 
-    /**
-     * Return ringkasan semua layup dalam import (new/existing/conflict).
-     */
+
     public function getImportSummary(int $supplierId, array $data): array
     {
         $supplier   = Supplier::findOrFail($supplierId);
@@ -321,10 +306,7 @@ class ImportExportService
         return $conflicts;
     }
 
-    /**
-     * Conflict detection dengan info lengkap per-layup (untuk preview UI).
-     * Mengelompokkan konflik per layup, menyertakan semua layer (konflik & tidak).
-     */
+
     private function detectConflictsDetailed(Supplier $supplier, array $layupsData): array
     {
         $result = [];
@@ -333,7 +315,7 @@ class ImportExportService
             $existingLayup = CltLayup::where('supplier_id', $supplier->id)
                 ->where('name', $layupData['name'])->first();
 
-            if (!$existingLayup) continue; // Layup baru, tidak ada konflik
+            if (!$existingLayup) continue; 
 
             $layupConflicts = [];
             $existingLayers = $existingLayup->layers->keyBy('layer_order');
@@ -350,7 +332,7 @@ class ImportExportService
             }
 
             if (!empty($layupConflicts)) {
-                // Susun semua layer existing dan incoming untuk tampilan side-by-side
+
                 $result[] = [
                     'layup_name'       => $layupData['name'],
                     'layup_id'         => $existingLayup->id,

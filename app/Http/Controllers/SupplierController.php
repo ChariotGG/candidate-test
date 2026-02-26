@@ -22,7 +22,9 @@ class SupplierController extends Controller
             ->latest()
             ->paginate(10);
 
-        return view('suppliers.show', compact('supplier', 'layups'));
+        $conflicts = session('import_conflicts_' . $supplier->id, []);
+
+        return view('suppliers.show', compact('supplier', 'layups', 'conflicts'));
     }
 
     public function create()

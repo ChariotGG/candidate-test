@@ -32,7 +32,6 @@ class LayupController extends Controller
             'name.required' => 'Nama layup wajib diisi.',
         ]);
 
-        // Cek duplikasi nama dalam supplier yang sama
         $exists = $supplier->layups()->where('name', $validated['name'])->exists();
         if ($exists) {
             return back()->withErrors(['name' => 'Nama layup sudah ada untuk supplier ini.'])->withInput();
@@ -55,7 +54,6 @@ class LayupController extends Controller
             'name' => ['required', 'string', 'max:255'],
         ]);
 
-        // Cek duplikasi nama dalam supplier yang sama (kecuali diri sendiri)
         $exists = $layup->supplier->layups()
             ->where('name', $validated['name'])
             ->where('id', '!=', $layup->id)

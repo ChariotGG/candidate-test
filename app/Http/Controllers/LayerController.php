@@ -23,7 +23,6 @@ class LayerController extends Controller
             'angle.in'             => 'Angle hanya boleh 0° atau 90°.',
         ]);
 
-        // Cek duplikasi layer_order dalam layup yang sama
         $exists = $layup->layers()->where('layer_order', $validated['layer_order'])->exists();
         if ($exists) {
             return back()->withErrors(['layer_order' => 'Layer order sudah digunakan dalam layup ini.'])->withInput();

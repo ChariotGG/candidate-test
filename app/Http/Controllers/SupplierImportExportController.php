@@ -45,13 +45,21 @@ class SupplierImportExportController extends Controller
         $strategy = $request->input('conflict_strategy', 'reject');
         $dryRun   = $request->boolean('dry_run');
 
-        // Manual strategy: simpan ke session lalu redirect ke preview page
         if ($strategy === 'manual') {
+
+            $conflicts = $this->importExportService->getConflictDetails($supplier->id, $data);
+
+            if (empty($conflicts)) {
+                $result = $this->importExportService->importSupplier($supplier->id, $data, 'overwrite', false);
+                return back()->with($result['status'] === 'success' ? 'success' : 'error', $result['message']);
+            }
+
             session([
                 'import_data_' . $supplier->id      => $data,
-                'import_filename_' . $supplier->id  => $request->file('import_file')->getClientOriginalName(),
+                'import_conflicts_' . $supplier->id => $conflicts,
             ]);
-            return redirect()->route('suppliers.import.preview', $supplier);
+
+            return back()->with('show_conflict_modal', true);
         }
 
         $result = $this->importExportService->importSupplier(
@@ -74,7 +82,7 @@ class SupplierImportExportController extends Controller
     }
 
     // =========================================================================
-    // IMPORT PREVIEW — Halaman conflict resolution manual
+    // IMPORT PREVIEW
     // =========================================================================
 
     public function importPreview(Supplier $supplier)
@@ -97,7 +105,7 @@ class SupplierImportExportController extends Controller
     }
 
     // =========================================================================
-    // IMPORT RESOLVE — Proses keputusan manual dari UI
+    // IMPORT RESOLVE
     // =========================================================================
 
     public function importResolve(Request $request, Supplier $supplier)
@@ -110,7 +118,7 @@ class SupplierImportExportController extends Controller
         }
 
         $importData = session($key);
-        // decisions: [['layup_name' => ..., 'layer_order' => ..., 'action' => 'keep'|'accept'], ...]
+        
         $decisions  = $request->input('decisions', []);
 
         $result = $this->importExportService->importWithDecisions(
