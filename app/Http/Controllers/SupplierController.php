@@ -10,7 +10,7 @@ class SupplierController extends Controller
     public function index()
     {
         $suppliers = Supplier::withCount('layups')->latest()->paginate(5);
-        
+
         return view('dashboard', compact('suppliers'));
     }
 
@@ -23,5 +23,54 @@ class SupplierController extends Controller
             ->paginate(10);
 
         return view('suppliers.show', compact('supplier', 'layups'));
+    }
+
+    public function create()
+    {
+        return view('suppliers.create');
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255', 'unique:suppliers,name'],
+        ], [
+            'name.required' => 'Nama supplier wajib diisi.',
+            'name.unique'   => 'Nama supplier sudah terdaftar.',
+        ]);
+
+        Supplier::create($validated);
+
+        return redirect()->route('dashboard')
+            ->with('success', "Supplier '{$validated['name']}' berhasil ditambahkan.");
+    }
+
+    public function edit(Supplier $supplier)
+    {
+        return view('suppliers.edit', compact('supplier'));
+    }
+
+    public function update(Request $request, Supplier $supplier)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255', 'unique:suppliers,name,' . $supplier->id],
+        ], [
+            'name.required' => 'Nama supplier wajib diisi.',
+            'name.unique'   => 'Nama supplier sudah terdaftar.',
+        ]);
+
+        $supplier->update($validated);
+
+        return redirect()->route('suppliers.show', $supplier)
+            ->with('success', "Supplier berhasil diperbarui.");
+    }
+
+    public function destroy(Supplier $supplier)
+    {
+        $name = $supplier->name;
+        $supplier->delete();
+
+        return redirect()->route('dashboard')
+            ->with('success', "Supplier '{$name}' berhasil dihapus.");
     }
 }

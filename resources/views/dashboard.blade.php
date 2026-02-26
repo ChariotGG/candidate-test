@@ -13,13 +13,28 @@
                     <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-1" style="font-family: ui-serif, Georgia, serif;">Suppliers</h1>
                     <p class="text-gray-500 dark:text-gray-400 text-sm">Manage timber suppliers and material sourcing.</p>
                 </div>
-                <button class="bg-[#2D6A4F] hover:bg-[#1B4332] text-white px-4 py-2 rounded-md flex items-center gap-2 text-sm font-medium transition-colors">
+
+                {{-- FIX 1: Add Supplier pakai <a> ke route suppliers.create --}}
+                <a href="{{ route('suppliers.create') }}" 
+                   class="bg-[#2D6A4F] hover:bg-[#1B4332] text-white px-4 py-2 rounded-md flex items-center gap-2 text-sm font-medium transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                     </svg>
                     Add Supplier
-                </button>
+                </a>
             </div>
+
+            {{-- Flash Messages --}}
+            @if(session('success'))
+                <div class="mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-md text-sm">
+                    {{ session('success') }}
+                </div>
+            @endif
+            @if(session('error'))
+                <div class="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
+                    {{ session('error') }}
+                </div>
+            @endif
 
             <div class="flex justify-between items-center mb-6">
                 <div class="relative w-96">
@@ -68,7 +83,7 @@
                                         </div>
                                         <div class="ml-4">
                                             <div class="text-sm font-bold text-gray-900 dark:text-white" style="font-family: ui-serif, Georgia, serif;">
-                                                <a href="{{ route('suppliers.show', $supplier->id) }}" class="hover:underline">{{ $supplier->name }}</a>
+                                                <a href="{{ route('suppliers.show', $supplier) }}" class="hover:underline">{{ $supplier->name }}</a>
                                             </div>
                                             <div class="text-xs text-gray-500 dark:text-gray-400">ID: SUP-{{ $supplier->created_at->format('Y') }}-{{ str_pad($supplier->id, 3, '0', STR_PAD_LEFT) }}</div>
                                         </div>
@@ -80,18 +95,35 @@
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                                     {{ $supplier->created_at->format('M d, Y') }}
                                 </td>
+
+                                {{-- FIX 2: Actions dengan View, Edit, Delete --}}
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <a href="{{ route('suppliers.show', $supplier->id) }}" class="text-gray-400 hover:text-gray-900 dark:hover:text-white">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                                        </svg>
-                                    </a>
+                                    <div class="flex items-center justify-end gap-4">
+                                        <a href="{{ route('suppliers.show', $supplier) }}" 
+                                           class="text-gray-400 hover:text-[#2D6A4F] transition-colors text-xs font-medium">
+                                            View
+                                        </a>
+                                        <a href="{{ route('suppliers.edit', $supplier) }}" 
+                                           class="text-gray-400 hover:text-[#2D6A4F] transition-colors text-xs font-medium">
+                                            Edit
+                                        </a>
+                                        <form action="{{ route('suppliers.destroy', $supplier) }}" method="POST"
+                                              onsubmit="return confirm('Hapus supplier {{ addslashes($supplier->name) }}? Semua layup dan layer terkait akan ikut terhapus.')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" 
+                                                    class="text-gray-400 hover:text-red-500 transition-colors text-xs font-medium">
+                                                Delete
+                                            </button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
                                 <td colspan="4" class="px-6 py-8 text-center text-gray-500">
-                                    Belum ada data Supplier. Silakan tambahkan atau import data.
+                                    Belum ada data Supplier. 
+                                    <a href="{{ route('suppliers.create') }}" class="text-[#2D6A4F] font-medium hover:underline">Tambahkan supplier pertama</a>.
                                 </td>
                             </tr>
                         @endforelse
